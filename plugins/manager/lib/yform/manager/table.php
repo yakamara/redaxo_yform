@@ -182,6 +182,11 @@ class rex_yform_manager_table implements ArrayAccess
         return 1 == $this->values['mass_edit'];
     }
 
+    public function isDatasetCopyAllowed()
+    {
+        return 1 == $this->values['dataset_copy'];
+    }
+
     public function overwriteSchema()
     {
         return (1 == $this->values['schema_overwrite']) ? true : false;

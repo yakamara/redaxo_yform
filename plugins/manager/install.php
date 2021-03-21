@@ -27,6 +27,7 @@ $table
     ->ensureColumn(new rex_sql_column('import', 'tinyint(1)'))
     ->ensureColumn(new rex_sql_column('mass_deletion', 'tinyint(1)'))
     ->ensureColumn(new rex_sql_column('mass_edit', 'tinyint(1)'))
+    ->ensureColumn(new rex_sql_column('dataset_copy', 'tinyint(1)'))
     ->ensureColumn(new rex_sql_column('schema_overwrite', 'tinyint(1)', false, 1))
     ->ensureColumn(new rex_sql_column('history', 'tinyint(1)'))
     ->ensureIndex(new rex_sql_index('table_name', ['table_name'], rex_sql_index::UNIQUE))
