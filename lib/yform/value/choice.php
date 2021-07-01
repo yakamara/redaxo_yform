@@ -10,6 +10,22 @@ class rex_yform_value_choice extends rex_yform_value_abstract
 {
     public static $yform_list_values = [];
 
+    public function explodeEscaped($delimiter, $str, $escapeChar = '\,') {
+
+        //Just some random placeholders that won't ever appear in the source $str
+
+        $double = "\0\0\0_doub";
+        $escaped = "\0\0\0_esc";
+        $str = str_replace($escapeChar . $escapeChar, $double, $str);
+        $str = str_replace($escapeChar . $delimiter, $escaped, $str);
+        $split = self::explodeEscaped($delimiter, $str);
+        foreach ($split as &$val) $val = str_replace([$double, $escaped], [$escapeChar, $delimiter], $val);
+
+        return $split;
+
+    }
+    
+    
     public function enterObject()
     {
         $choiceList = self::createChoiceList([
@@ -26,7 +42,7 @@ class rex_yform_value_choice extends rex_yform_value_abstract
         if (null === $this->getValue()) {
             $this->setValue([]);
         } elseif (!is_array($this->getValue())) {
-            $this->setValue(explode(',', $this->getValue()));
+            $this->setValue(self::explodeEscaped(',', $this->getValue()));
         }
 
         $values = $this->getValue();
@@ -35,7 +51,7 @@ class rex_yform_value_choice extends rex_yform_value_abstract
             if (in_array($this->getElement('default'), $choiceList->getChoices(), true)) {
                 $defaultChoices = [$this->getElement('default')];
             } else {
-                $defaultChoices = explode(',', $this->getElement('default'));
+                $defaultChoices = self::explodeEscaped(',', $this->getElement('default'));
             }
             if (!$choiceList->isMultiple() && count($defaultChoices) >= 2) {
                 throw new InvalidArgumentException('Expecting one default value for '.$this->getFieldName().', but '.count($defaultChoices).' given!');
@@ -142,7 +158,7 @@ class rex_yform_value_choice extends rex_yform_value_abstract
     {
         $listValues = self::getListValues($params);
         $return = [];
-        foreach (explode(',', $params['value']) as $value) {
+        foreach (self::explodeEscaped(',', $params['value']) as $value) {
             if (isset($listValues[$value])) {
                 $return[] = rex_i18n::translate($listValues[$value]);
             }
