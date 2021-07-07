@@ -118,7 +118,7 @@ class rex_yform_manager_field implements ArrayAccess
             if ('' != $this->values['table']) {
                 $tables[] = $this->values['table'];
             }
-            if ('' != $this->values['relation_table']) {
+            if (array_key_exists('relation_table', $this->values) && '' != $this->values['relation_table']) {
                 $tables[] = $this->values['relation_table'];
             }
         }
