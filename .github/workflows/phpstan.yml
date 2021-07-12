@@ -1,27 +1,59 @@
 name: PHP Checks
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+    repository_dispatch:
+        types: [phpstan-baseline-command] # triggered by /phpstan-baseline PR comment
 
 jobs:
 
-  phpstan-analysis:
-      name: phpstan static code analysis
-      runs-on: ubuntu-latest
+    phpstan-analysis:
+        name: phpstan static code analysis
+        runs-on: ubuntu-latest
 
-      steps:
-          - uses: actions/checkout@v2
-          - name: Setup PHP
-            uses: shivammathur/setup-php@v2
-            with:
-                php-version: 7.4
-                extensions: intl, imagick
-                coverage: none # disable xdebug, pcov
-                tools: cs2pr
+        steps:
+        - name: Add action run link to trigger comment
+          if: "github.event_name == 'repository_dispatch'"
+          uses: peter-evans/create-or-update-comment@v1
+          with:
+            token: ${{ secrets.STAABM_TOKEN }}
+            repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+            comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+            body: |
+              ```
+              https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              ```
+        - uses: actions/checkout@v2
+          if: "github.event_name == 'repository_dispatch'"
+          with:
+            token: ${{ secrets.STAABM_TOKEN }}
+            repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+            ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
-          - name: Install Dependencies
-            run: composer install --prefer-dist
+        # use checkout without token, to make the workflow work in forks
+        - uses: actions/checkout@v2
+          if: "github.event_name != 'repository_dispatch'"
 
-          - run: |
-                vendor/bin/phpstan analyse --no-progress
+        - name: Setup PHP
+          uses: shivammathur/setup-php@v2
+          with:
+              php-version: 7.4
+              extensions: intl, imagick
+              coverage: none # disable xdebug, pcov
+
+        - name: Install Dependencies
+          run: composer install --ansi --prefer-dist
+
+        - run: composer phpstan-baseline # generate baseline
+          if: "github.event_name == 'repository_dispatch'"
+        - name: Commit changed files
+          if: "github.event_name == 'repository_dispatch'"
+          uses: stefanzweifel/git-auto-commit-action@v4
+          with:
+            commit_message: Apply phpstan-baseline changes
+            branch: ${{ github.head_ref }}
+            file_pattern: '*.neon'
+
+        - run: vendor/bin/phpstan analyse --ansi --no-progress
+          if: "github.event_name != 'repository_dispatch'"
